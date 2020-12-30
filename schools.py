@@ -288,7 +288,7 @@ if rankingfilter != 'All':
     df = df.sort_values(by=rankingfilter,ascending=True)
 
 fig = px.scatter_mapbox(df,lat='lat',lon='lon',hover_name='Ecole',color = 'Salaire à la sortie, hors prime',hover_data={'Note générale':True,'Salaire à la sortie, hors prime':True,'lat':False,'lon':False,'Moyenne au bac des nouveaux étudiants entrant à bac':':.2f','Moyenne au bac des nouveaux étudiants entrant à bac +2':':.2f','Pourcentage de mention TB au bac':':.2%',"Nombre total d'admis":':.2f','Prepa integree %':':.2%','CPGE %':':.2%','Admission parallele %':':.2%',"Nombre d'anciens sur Linkedin":True}
-    ,zoom=9,center=dict(lat=48.86,lon=2.35),size='Note générale',size_max=15,height=800)
+    ,zoom=9,center=dict(lat=48.86,lon=2.35),size='Note générale',size_max=15,height=800,category_orders={'Salaire à la sortie, hors prime':['+ de 41 000 €','de 38 000 à 41 000 €','de 35 000 à 38 000 €','de 32 000 à 35 000 €','- de 32 000 €']})
 fig.update_layout(mapbox_style='open-street-map',title="Panorama des ecoles")
 st.plotly_chart(fig,use_container_width=True)
 
