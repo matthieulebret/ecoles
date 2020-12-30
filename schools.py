@@ -18,7 +18,7 @@ import plotly.express as px
 
 from bs4 import BeautifulSoup
 
-st.set_page_config(layout='wide')
+st.set_page_config('Ecoles ingenieur comparatif',layout='wide')
 
 st.title("Ecoles d'ingenieur en France")
 
