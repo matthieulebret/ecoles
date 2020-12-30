@@ -11,6 +11,8 @@ import re
 import time
 import random
 
+import xlrd
+
 import plotly.express as px
 
 
