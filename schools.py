@@ -292,6 +292,7 @@ fig = px.scatter_mapbox(df,lat='lat',lon='lon',hover_name='Ecole',color = 'Salai
 fig.update_layout(mapbox_style='open-street-map',title="Panorama des ecoles")
 st.plotly_chart(fig,use_container_width=True)
 
+df.set_index('Ecole',inplace=True)
 
 df = df.style.format(
     {'Note générale':'{:.2f}',
