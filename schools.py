@@ -5,6 +5,8 @@ import json
 import urllib.parse
 import requests
 
+import plotly.graph_objects as go
+
 import math
 import re
 
@@ -168,7 +170,7 @@ errors = []
 # df['Excellence'] = df['Excellence'].apply(lambda x: x.replace('#',''))
 # df['Excellence'] = pd.to_numeric(df['Excellence'],errors='raise')
 #
-# nan = float('nan')
+nan = float('nan')
 #
 #
 # def formatcol(string):
@@ -336,5 +338,207 @@ df = df.style.format(
 with st.beta_expander('Visualisez les donnees'):
     st.write(df)
 
-
 # df.to_excel('ecoles.xlsx')
+
+##########################################
+##########################################
+############ L'etudiant ##################
+##########################################
+##########################################
+
+# base_url = r'https://www.letudiant.fr/palmares/liste-profils/palmares-des-ecoles-d-ingenieurs/palmares-general-des-ecoles-d-ingenieurs/home.html#indicateurs=900716,900717,900718,900719&criterias'
+#
+# response = requests.get(base_url)
+# st.write(response.ok,response.status_code)
+#
+# html = response.content
+
+# Make the soup
+
+# soup = BeautifulSoup(html,'lxml')
+
+# list of headers
+
+# schoollinks = soup.find_all('a',{'class':'u-typo-strong'})
+#
+# alllinks = [(link['href'],link.text) for link in schoollinks]
+# # alllinks
+#
+# placeholder = st.empty()
+# progholder = st.empty()
+# mybar = st.progress(0)
+#
+# errors=[]
+# bigdf = pd.DataFrame()
+# i=1
+# nbschools = len(alllinks)
+#
+# for link in alllinks:
+#     try:
+#         response = requests.get(link[0])
+#         html = response.content
+#         soup = BeautifulSoup(html,'lxml')
+#         catlist = soup.find_all('a',{'class':'c-pmd-flex__item'})
+#         school = [link[1] for cat in catlist]
+#         allcat = [cat.text for cat in catlist]
+#         scorelist = soup.find_all('td',{'class':'c-pmd-table__value'})
+#         allscores = [score.find('span',{'class':'u-typo-strong'}).text for score in scorelist]
+#         df=pd.DataFrame([school,allcat,allscores]).transpose()
+#         df.to_csv('letudiant.csv',mode='a')
+#     except:
+#         errors.append(link[1])
+#
+#     with placeholder:
+#         st.write(str(i)+' school out of '+str(nbschools)+' done, with '+str(len(errors))+' errors so far.')
+#     with progholder:
+#         pct_complete = '{:,.2%}'.format((i)/nbschools)
+#         st.write(pct_complete,' complete.' )
+#         mybar.progress(i/nbschools)
+#     time.sleep(random.uniform(2,4))
+#     i=i+1
+
+st.header("Classement l'Etudiant")
+
+# bigdf = pd.read_csv('letudiant.csv').iloc[:,1:]
+# bigdf.columns = ['Ecole','Critere','Note']
+# bigdf = bigdf[bigdf['Ecole']!='0']
+#
+# schoollist = bigdf['Ecole'].unique().tolist()
+# criterelist = bigdf['Critere'].unique().tolist()
+#
+# bigdf.set_index('Ecole',inplace=True)
+#
+# def getnote(critere):
+#     try:
+#         return df[df['Critere']==critere]['Note'][0]
+#     except:
+#         return None
+#
+# newdf = pd.DataFrame()
+#
+# for school in schoollist:
+#     notes = [school]
+#     for critere in criterelist:
+#         df = bigdf.loc[school]
+#         notes.append(getnote(critere))
+#     newdf = newdf.append(pd.DataFrame(notes).transpose())
+#
+# criterelist.insert(0,'Ecole')
+# newdf.columns=criterelist
+#
+# newdf.to_csv('letudiant_all_data.csv')
+
+df = pd.read_csv('letudiant_all_data.csv').iloc[:,1:]
+
+
+orientcol = df.columns[27:41].insert(0,'Ecole')
+
+orientation = df[[col for col in orientcol]]
+
+def formatcol(string):
+    if '%' in str(string):
+        string=string.replace('%','')
+    if ',' in str(string):
+        string=string.replace(',','.')
+    if str(string) == 'NC':
+        string = nan
+    return float(string)/100
+
+for col in orientcol[1:]:
+    orientation[col] = orientation[col].apply(formatcol)
+
+
+schoollist = orientation['Ecole'].unique().tolist()
+schoollist.sort()
+
+schoolselect = st.multiselect('Selectionnez les ecoles',schoollist,default=schoollist[:3])
+
+orientation = orientation[orientation['Ecole'].isin(schoolselect)]
+orientation.fillna(0,inplace=True)
+
+##### Spider chart
+
+categories = orientcol[1:].to_list()
+
+# orientation[orientation['Ecole']==schoolselect[0]][categories[0]].values[0]
+
+
+fig = go.Figure()
+
+for school in schoolselect:
+    fig.add_trace(go.Scatterpolar(
+          r=[orientation[orientation['Ecole']==school][cat].values[0] for cat in categories],
+          theta=categories,
+          fill='toself',
+          name=school
+    ))
+
+fig.update_layout(template='plotly_dark',
+                polar=dict(
+                    radialaxis=dict(tickformat='%')
+                ))
+
+
+st.plotly_chart(fig,use_container_width=True)
+
+df.set_index('Ecole',inplace=True)
+
+
+def formatnote(string):
+    if ',' in str(string):
+        string = string.replace(',','.')
+    if ' semaines' in str(string):
+        string = string.replace(' semaines','')
+    if str(string) == 'NC':
+        string = nan
+    return float(string)
+
+
+df.iloc[:,1] = df.iloc[:,1].apply(formatnote)
+df.iloc[:,2] = df.iloc[:,2].apply(formatnote)
+df.iloc[:,3] = df.iloc[:,3].apply(formatcol)
+df.iloc[:,4] = df.iloc[:,4].apply(formatcol)
+df.iloc[:,5] = df.iloc[:,5].apply(formatnote)
+df.iloc[:,6] = df.iloc[:,6].apply(formatnote)
+df.iloc[:,7] = df.iloc[:,7].apply(formatcol)
+df.iloc[:,8] = df.iloc[:,8].apply(formatnote)
+df.iloc[:,9] = df.iloc[:,9].apply(formatnote)
+
+df.iloc[:,11] = df.iloc[:,11].apply(formatnote)
+df.iloc[:,12] = df.iloc[:,12].apply(formatnote)
+df.iloc[:,13] = df.iloc[:,13].apply(formatnote)
+
+df.iloc[:,14] = df.iloc[:,14].apply(formatcol)
+
+df.iloc[:,19] = df.iloc[:,19].apply(formatcol)
+df.iloc[:,20] = df.iloc[:,20].apply(formatcol)
+
+df.iloc[:,22] = df.iloc[:,22].apply(formatcol)
+
+for i in range(25,40):
+    df.iloc[:,i] = df.iloc[:,i].apply(formatcol)
+    i=i+1
+
+df.iloc[:,43] = df.iloc[:,43].apply(formatnote)
+df.iloc[:,44] = df.iloc[:,44].apply(formatcol)
+
+for i in range(45,51):
+    df.iloc[:,i] = df.iloc[:,i].apply(formatnote)
+    i=i+1
+
+df.iloc[:,51] = df.iloc[:,51].apply(formatcol)
+df.iloc[:,52] = df.iloc[:,52].apply(formatcol)
+df.iloc[:,53] = df.iloc[:,53].apply(formatcol)
+
+df.iloc[:,60] = df.iloc[:,60].apply(formatnote)
+df.iloc[:,61] = df.iloc[:,61].apply(formatcol)
+df.iloc[:,63] = df.iloc[:,63].apply(formatcol)
+
+df.iloc[:,65] = df.iloc[:,65].apply(formatnote)
+
+df.iloc[:,69] = df.iloc[:,69].apply(formatnote)
+df.iloc[:,70] = df.iloc[:,70].apply(formatnote)
+df.iloc[:,71] = df.iloc[:,71].apply(formatnote)
+
+with st.beta_expander('Visualiser les donnees'):
+    st.write(df)
